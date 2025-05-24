@@ -1,1 +1,410 @@
-teste 
+#!/bin/bash
+
+PLUGIN="wpcm-tpg-videos-local"
+PLUGDIR="/var/www/fisiolab.rd5.com.br/htdocs/wp-content/plugins/$PLUGIN"
+
+# Remove plugin antigo, se existir
+rm -rf "$PLUGDIR"
+mkdir -p "$PLUGDIR"
+
+# PHP principal do plugin
+cat > "$PLUGDIR/$PLUGIN.php" <<'EOF'
+<?php
+/*
+Plugin Name: WPCM-TPG-Videos Local
+Description: Galeria premium de vídeos autohospedados responsiva, desktop e mobile, com modais e thumbnails.
+Version: 2.1
+Author: Daniel Oliveira da Paixão
+*/
+
+if (!defined('ABSPATH')) exit;
+
+function wpcm_tpg_parse_csv($input) {
+    if (empty($input)) return [];
+    return array_filter(array_map('trim', explode(',', $input)));
+}
+
+// Shortcode Desktop/Tablet
+function wpcm_tpg_videos_local_shortcode($atts) {
+    $a = shortcode_atts([
+        'main'   => '',
+        'title'  => '',
+        'videos' => '',
+        'posters'=> '',
+    ], $atts);
+
+    $main = esc_url($a['main']);
+    $title = esc_html($a['title']);
+    $videos_arr  = wpcm_tpg_parse_csv($a['videos']);
+    $posters_arr = wpcm_tpg_parse_csv($a['posters']);
+
+    $main_poster = !empty($posters_arr[0]) ? esc_url($posters_arr[0]) : '';
+
+    ob_start(); ?>
+    <div class="wpcm-tpg-videos-wrap plugin-video-desktop">
+        <?php if($title): ?>
+            <h2 class="wpcm-tpg-videos-title"><?php echo $title; ?></h2>
+        <?php endif; ?>
+        <div class="wpcm-tpg-videos-main-thumb" style="max-width:640px;margin:0 auto;position:relative;">
+            <img src="<?php echo $main_poster ?: 'https://dummyimage.com/640x360/cccccc/444444&text=Video'; ?>" width="640" height="360" alt="Vídeo principal" class="wpcm-tpg-thumb-img" style="object-fit:cover;border-radius:2rem;">
+            <button class="wpcm-tpg-play-btn" data-video="<?php echo $main; ?>" data-poster="<?php echo $main_poster; ?>" tabindex="0" aria-label="Assistir vídeo principal">
+                <svg width="48" height="48" viewBox="0 0 48 48">
+                    <circle cx="24" cy="24" r="24" fill="#fff" fill-opacity="0.19"/>
+                    <circle cx="24" cy="24" r="20" fill="#2563eb" />
+                    <polygon points="20,16 34,24 20,32" fill="#fff"/>
+                </svg>
+            </button>
+        </div>
+        <button class="wpcm-tpg-show-videos-btn">Ver todos os vídeos</button>
+    </div>
+    <div class="wpcm-tpg-modal-bg" style="display:none;">
+        <div class="wpcm-tpg-modal-content">
+            <button class="wpcm-tpg-modal-close" aria-label="Fechar">&times;</button>
+            <div class="wpcm-tpg-modal-grid">
+                <div class="wpcm-tpg-modal-item">
+                    <img src="<?php echo $main_poster ?: 'https://dummyimage.com/320x180/cccccc/444444&text=Video'; ?>" width="320" height="180" class="wpcm-tpg-thumb-img" style="object-fit:cover;">
+                    <button class="wpcm-tpg-play-btn" data-video="<?php echo $main; ?>" data-poster="<?php echo $main_poster; ?>">
+                        <svg width="44" height="44" viewBox="0 0 48 48">
+                            <circle cx="24" cy="24" r="24" fill="#fff" fill-opacity="0.19"/>
+                            <circle cx="24" cy="24" r="20" fill="#2563eb" />
+                            <polygon points="20,16 34,24 20,32" fill="#fff"/>
+                        </svg>
+                    </button>
+                </div>
+                <?php foreach($videos_arr as $i => $vid): $poster = !empty($posters_arr[$i+1]) ? esc_url($posters_arr[$i+1]) : 'https://dummyimage.com/320x180/cccccc/444444&text=Video'; ?>
+                    <div class="wpcm-tpg-modal-item">
+                        <img src="<?php echo $poster; ?>" width="320" height="180" class="wpcm-tpg-thumb-img" style="object-fit:cover;">
+                        <button class="wpcm-tpg-play-btn" data-video="<?php echo esc_url($vid); ?>" data-poster="<?php echo $poster; ?>">
+                            <svg width="44" height="44" viewBox="0 0 48 48">
+                                <circle cx="24" cy="24" r="24" fill="#fff" fill-opacity="0.19"/>
+                                <circle cx="24" cy="24" r="20" fill="#2563eb" />
+                                <polygon points="20,16 34,24 20,32" fill="#fff"/>
+                            </svg>
+                        </button>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+            <div class="wpcm-tpg-modal-player" style="display:none;">
+                <button class="wpcm-tpg-modal-player-close" aria-label="Fechar vídeo">&times;</button>
+                <div class="wpcm-tpg-modal-player-iframe"></div>
+            </div>
+        </div>
+    </div>
+    <?php
+    return ob_get_clean();
+}
+add_shortcode('wpcm_tpg_videos_local', 'wpcm_tpg_videos_local_shortcode');
+
+// Shortcode mobile: versão compacta, grade sem modal
+function wpcm_tpg_videos_local_mobile_shortcode($atts) {
+    $a = shortcode_atts([
+        'main'   => '',
+        'title'  => '',
+        'videos' => '',
+        'posters'=> '',
+    ], $atts);
+
+    $main = esc_url($a['main']);
+    $title = esc_html($a['title']);
+    $videos_arr  = wpcm_tpg_parse_csv($a['videos']);
+    $posters_arr = wpcm_tpg_parse_csv($a['posters']);
+
+    ob_start(); ?>
+    <div class="wpcm-tpg-videos-wrap plugin-video-mobile">
+        <?php if($title): ?>
+            <h2 class="wpcm-tpg-videos-title"><?php echo $title; ?></h2>
+        <?php endif; ?>
+        <div class="wpcm-tpg-modal-grid">
+            <div class="wpcm-tpg-modal-item">
+                <video class="wpcm-tpg-thumb-img" width="100%" height="180" controls preload="metadata" poster="<?php echo !empty($posters_arr[0]) ? esc_url($posters_arr[0]) : ''; ?>">
+                    <source src="<?php echo $main; ?>" type="video/mp4">
+                    Seu navegador não suporta vídeo HTML5.
+                </video>
+            </div>
+            <?php foreach($videos_arr as $i => $vid): $poster = !empty($posters_arr[$i+1]) ? esc_url($posters_arr[$i+1]) : ''; ?>
+                <div class="wpcm-tpg-modal-item">
+                    <video class="wpcm-tpg-thumb-img" width="100%" height="180" controls preload="metadata" poster="<?php echo $poster; ?>">
+                        <source src="<?php echo esc_url($vid); ?>" type="video/mp4">
+                    </video>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    </div>
+    <?php
+    return ob_get_clean();
+}
+add_shortcode('wpcm_tpg_videos_local_mobile', 'wpcm_tpg_videos_local_mobile_shortcode');
+
+// Enfileira CSS/JS
+add_action('wp_enqueue_scripts', function() {
+    wp_enqueue_style('wpcm-tpg-videos', plugins_url('wpcm-tpg-videos.css', __FILE__), [], '2.1');
+    wp_enqueue_script('wpcm-tpg-videos-local', plugins_url('wpcm-tpg-videos-local.js', __FILE__), [], '2.1', true);
+});
+EOF
+
+# JS do plugin
+cat > "$PLUGDIR/wpcm-tpg-videos-local.js" <<'EOF'
+document.addEventListener('DOMContentLoaded', function() {
+    function openModal(modal) { modal.style.display = 'flex'; }
+    function closeModal(modal) { 
+        modal.style.display = 'none'; 
+        closePlayer(modal);
+    }
+    function playVideo(modal, videoUrl, poster) {
+        const player = modal.querySelector('.wpcm-tpg-modal-player');
+        const iframeDiv = modal.querySelector('.wpcm-tpg-modal-player-iframe');
+        iframeDiv.innerHTML = `<video controls autoplay width="100%" height="100%" style="border-radius:2rem;background:#111;" poster="${poster || ''}">
+            <source src="${videoUrl}" type="video/mp4">
+            Seu navegador não suporta vídeo HTML5.
+        </video>`;
+        player.style.display = 'flex';
+    }
+    function closePlayer(modal) {
+        const player = modal.querySelector('.wpcm-tpg-modal-player');
+        const iframeDiv = modal.querySelector('.wpcm-tpg-modal-player-iframe');
+        iframeDiv.innerHTML = '';
+        player.style.display = 'none';
+    }
+
+    document.querySelectorAll('.plugin-video-desktop').forEach(function(block) {
+        const modal = block.nextElementSibling;
+        block.querySelector('.wpcm-tpg-show-videos-btn').onclick = () => openModal(modal);
+        modal.querySelector('.wpcm-tpg-modal-close').onclick = () => closeModal(modal);
+
+        block.querySelector('.wpcm-tpg-play-btn').onclick = function(e) {
+            e.preventDefault();
+            playVideo(modal, this.dataset.video, this.dataset.poster);
+            openModal(modal);
+        };
+
+        modal.querySelectorAll('.wpcm-tpg-play-btn').forEach(function(btn) {
+            btn.onclick = function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                playVideo(modal, this.dataset.video, this.dataset.poster);
+            };
+        });
+
+        modal.querySelector('.wpcm-tpg-modal-player-close').onclick = () => closePlayer(modal);
+        modal.onclick = function(e) {
+            if(e.target === modal) closeModal(modal);
+        };
+    });
+});
+EOF
+
+# CSS responsivo
+cat > "$PLUGDIR/wpcm-tpg-videos.css" <<'EOF'
+.plugin-video-desktop { display: block; }
+.plugin-video-mobile { display: none; }
+@media (max-width: 900px) {
+  .plugin-video-desktop { display: none !important; }
+  .plugin-video-mobile { display: block !important; }
+}
+
+.wpcm-tpg-videos-wrap {
+  font-family: 'Montserrat', 'Inter', Arial, sans-serif;
+  background: linear-gradient(135deg,#f5f8fa 60%,#eaf6ff 100%);
+  border-radius: 2.5rem;
+  box-shadow: 0 8px 40px rgba(36,47,64,0.13);
+  max-width: 760px;
+  margin: 2.5rem auto;
+  padding: 2.7rem 2rem 3.2rem 2rem;
+  text-align: center;
+  position: relative;
+  z-index: 10;
+}
+.wpcm-tpg-videos-title {
+  font-size: 2.4rem;
+  font-weight: 800;
+  margin-bottom: 2rem;
+  letter-spacing: -1.5px;
+  color: #1c2141;
+  text-shadow: 0 1px 0 #fff,0 4px 16px #2563eb22;
+}
+.wpcm-tpg-videos-main-thumb {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 2rem;
+  overflow: hidden;
+  box-shadow: 0 8px 40px rgba(36,47,64,0.17);
+  aspect-ratio: 16/9;
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto 2.3rem auto;
+  background: #000;
+}
+.wpcm-tpg-thumb-img {
+  width: 100%;
+  height: 100%;
+  min-height: 180px;
+  aspect-ratio: 16/9;
+  object-fit: cover;
+  border-radius: 2rem;
+  filter: brightness(0.97);
+  transition: filter .18s;
+}
+.wpcm-tpg-play-btn {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle at 50% 50%, #60a5fa 0%, #2563eb 80%);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  outline: none;
+  box-shadow: 0 0 32px #0ea5e944,0 4px 24px #2563eb11;
+  padding: 1.6rem;
+  z-index: 2;
+  opacity: 0.95;
+  transition: opacity .17s, box-shadow .22s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.wpcm-tpg-play-btn:hover {
+  opacity: 1;
+  box-shadow: 0 0 64px #2563eb44,0 8px 32px #2563eb22;
+}
+.wpcm-tpg-play-btn svg {
+  display: block;
+  width: 2.8rem;
+  height: 2.8rem;
+}
+.wpcm-tpg-show-videos-btn {
+  margin-top: 1.4rem;
+  padding: 1.2rem 3.3rem;
+  border-radius: 9999px;
+  background: linear-gradient(90deg,#0ea5e9,#2563eb 90%);
+  color: #fff;
+  font-size: 1.35rem;
+  font-weight: 700;
+  border: 3px solid #fff;
+  cursor: pointer;
+  box-shadow: 0 6px 32px #60a5fa33;
+  transition: background .18s, box-shadow .18s;
+  letter-spacing: .8px;
+}
+.wpcm-tpg-show-videos-btn:hover {
+  background: linear-gradient(90deg,#2563eb,#0ea5e9 100%);
+  box-shadow: 0 6px 32px #2563eb55;
+}
+.wpcm-tpg-modal-bg {
+  position: fixed;
+  inset: 0;
+  background: rgba(18,19,34,0.98);
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadein .28s;
+}
+@keyframes fadein {from{opacity:0;}to{opacity:1;}}
+.wpcm-tpg-modal-content {
+  background: linear-gradient(135deg,#202845 70%,#364381 100%);
+  border-radius: 2.3rem;
+  max-width: 1100px;
+  width: 95vw;
+  max-height: 92vh;
+  padding: 2.7rem 1.5rem 2rem 1.5rem;
+  overflow: auto;
+  position: relative;
+  box-shadow: 0 6px 48px #23294177;
+}
+.wpcm-tpg-modal-close {
+  position: absolute;
+  top: 1.8rem;
+  right: 2.2rem;
+  font-size: 3.2rem;
+  color: #fff;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-weight: 800;
+  opacity: 0.7;
+  transition: opacity .15s;
+}
+.wpcm-tpg-modal-close:hover { opacity: 1; }
+.wpcm-tpg-modal-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px,1fr));
+  gap: 1.4rem;
+  margin-top: 1.3rem;
+}
+.wpcm-tpg-modal-item {
+  background: #181f34;
+  border-radius: 1.3rem;
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 16/9;
+  box-shadow: 0 3px 24px #23294133;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: box-shadow .17s;
+}
+.wpcm-tpg-modal-item:hover {
+  box-shadow: 0 8px 48px #60a5fa44;
+}
+.wpcm-tpg-modal-item .wpcm-tpg-thumb-img {
+  filter: brightness(0.92) blur(0.5px);
+  transition: filter .16s;
+}
+.wpcm-tpg-modal-item:hover .wpcm-tpg-thumb-img {
+  filter: brightness(1.03) blur(0px);
+}
+.wpcm-tpg-modal-player {
+  position: fixed;
+  inset: 0;
+  background: rgba(11,12,22,0.98);
+  z-index: 100000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadein .23s;
+  flex-direction: column;
+}
+.wpcm-tpg-modal-player-iframe {
+  background: #111;
+  border-radius: 2rem;
+  overflow: hidden;
+  width: 94vw;
+  max-width: 900px;
+  aspect-ratio: 16/9;
+  margin-bottom: 2.2rem;
+  box-shadow: 0 8px 48px #2563eb22;
+}
+.wpcm-tpg-modal-player-close {
+  color: #fff;
+  background: none;
+  border: none;
+  font-size: 3.4rem;
+  cursor: pointer;
+  margin-bottom: 2.1rem;
+  align-self: flex-end;
+  opacity: .75;
+  transition: opacity .15s;
+}
+.wpcm-tpg-modal-player-close:hover { opacity: 1; }
+@media (max-width: 900px) {
+  .plugin-video-desktop { display: none !important; }
+  .plugin-video-mobile { display: block !important; }
+  .wpcm-tpg-videos-wrap, .wpcm-tpg-modal-content { padding: 0.6rem; border-radius: 1.1rem; }
+  .wpcm-tpg-modal-grid { grid-template-columns: 1fr; }
+  .wpcm-tpg-videos-title { font-size: 1.2rem; }
+  .wpcm-tpg-modal-item { aspect-ratio: 16/9; min-height: 180px; }
+  .wpcm-tpg-thumb-img { border-radius: 1rem; min-height: 100px; }
+  .wpcm-tpg-modal-bg { z-index: 99999; }
+}
+EOF
+
+echo "Plugin '$PLUGIN' atualizado!"
+echo
+echo "Lembre-se: o parâmetro posters do shortcode deve trazer as URLs das miniaturas, na mesma ordem dos vídeos."
+echo "Use assim no editor do WordPress:"
+echo
+echo '[wpcm_tpg_videos_local main="URL1.mp4" title="Título" videos="URL2.mp4,URL3.mp4,..." posters="URL1.jpg,URL2.jpg,URL3.jpg,..."]'
+echo '[wpcm_tpg_videos_local_mobile main="URL1.mp4" title="Título" videos="URL2.mp4,URL3.mp4,..." posters="URL1.jpg,URL2.jpg,URL3.jpg,..."]'
+echo
