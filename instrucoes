@@ -1,0 +1,24 @@
+Como usar:
+Salve como atualiza_plugin_videos.sh
+
+Rode no terminal:
+
+bash
+Copiar
+Editar
+bash atualiza_plugin_videos.sh
+Ative o plugin no WordPress.
+
+No seu post/página, use por exemplo:
+
+plaintext
+Copiar
+Editar
+[wpcm_tpg_videos_local
+  main="https://fisiolab.rd5.com.br/wp-content/videos/2.mp4"
+  title="Fisioterapia e Ergonomia na Prática"
+  videos="https://fisiolab.rd5.com.br/wp-content/videos/3.mp4,https://fisiolab.rd5.com.br/wp-content/videos/4.mp4,https://fisiolab.rd5.com.br/wp-content/videos/5.mp4,https://fisiolab.rd5.com.br/wp-content/videos/6.mp4,https://fisiolab.rd5.com.br/wp-content/videos/1.mp4"
+  posters="https://fisiolab.rd5.com.br/wp-content/videos/poster2.jpg,https://fisiolab.rd5.com.br/wp-content/videos/poster3.jpg,https://fisiolab.rd5.com.br/wp-content/videos/poster4.jpg,https://fisiolab.rd5.com.br/wp-content/videos/poster5.jpg,https://fisiolab.rd5.com.br/wp-content/videos/poster6.jpg,https://fisiolab.rd5.com.br/wp-content/videos/poster1.jpg"
+]
+O primeiro poster é do vídeo principal, os demais seguem a ordem dos vídeos.
+
